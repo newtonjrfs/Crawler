@@ -2,9 +2,9 @@ var request = require('request');
 var cheerio = require('cheerio');
 var URL = require('url-parse');
 
-var START_URL = "http://www.google.com.br";
-var SEARCH_WORD = "pesquisa";
-var MAX_PAGES_TO_VISIT = 10;
+var START_URL = "http://www.google.com";
+var SEARCH_WORD = "ornitorrinco";
+var MAX_PAGES_TO_VISIT = 50;
 
 var pagesVisited = {};
 var numPagesVisited = 0;
@@ -17,41 +17,41 @@ crawl();
 
 function crawl() {
   if(numPagesVisited >= MAX_PAGES_TO_VISIT) {
-    console.log("Reached max limit of number of pages to visit.");
+    console.log("Limite de páginas alcançado.");
     return;
   }
   var nextPage = pagesToVisit.pop();
   if (nextPage in pagesVisited) {
-    // We've already visited this page, so repeat the crawl
+    // Se a página já foi visitada, chamamos novamente o crawler
     crawl();
   } else {
-    // New page we haven't visited
+    // Se a página ainda não foi visitada
     visitPage(nextPage, crawl);
   }
 }
 
 function visitPage(url, callback) {
-  // Add page to our set
+  // Adiciona a página
   pagesVisited[url] = true;
   numPagesVisited++;
 
-  // Make the request
-  console.log("Visiting page " + url);
+  console.log("Visitando a página " + url);
   request(url, function(error, response, body) {
-     // Check status code (200 is HTTP OK)
-     console.log("Status code: " + response.statusCode);
+     // Status (200 - HTTP OK)
+     console.log("Status: " + response.statusCode);
      if(response.statusCode !== 200) {
        callback();
        return;
      }
-     // Parse the document body
+     // Verifica o corpo da página
      var $ = cheerio.load(body);
      var isWordFound = searchForWord($, SEARCH_WORD);
+     console.log("Título da Página: " + $('title').text());
      if(isWordFound) {
-       console.log('Word ' + SEARCH_WORD + ' found at page ' + url);
+       console.log('A palavra ' + SEARCH_WORD + ' foi encontrada na página ' + url);
+       console.log('Quantidade de páginas visitadas: '+numPagesVisited)
      } else {
        collectInternalLinks($);
-       // In this short program, our callback is just calling crawl()
        callback();
      }
   });
@@ -64,8 +64,9 @@ function searchForWord($, word) {
 
 function collectInternalLinks($) {
     var relativeLinks = $("a[href^='/']");
-    console.log("Found " + relativeLinks.length + " relative links on page");
+    console.log("Encontrados " + relativeLinks.length + " links relativos na página.");
     relativeLinks.each(function() {
         pagesToVisit.push(baseUrl + $(this).attr('href'));
     });
+
 }
